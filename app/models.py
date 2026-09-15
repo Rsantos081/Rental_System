@@ -12,6 +12,7 @@ class Inventario(db.Model):
     transmissao = db.Column(db.String(255), nullable=False)
     motor = db.Column(db.String(255), nullable=False)
     combustivel = db.Column(db.String(255), nullable=False)
+    marcas = db.relationship('Marcas', backref='Inventario', lazy = True)
     marcas_id = db.Column(db.Integer, db.ForeignKey('marcas.id'))
 
 class Clientes(db.Model):
@@ -24,7 +25,9 @@ class Pagamentos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     valor_pago = db.Column(db.Numeric(10,2), nullable=False)
     data_pagamentos = db.Column(db.Date,nullable=False)
-    inventario_id = db.Column(db.Integer,db.ForeignKey('inventario.id'))
-    clientes_id = db.Column(db.Integer,db.ForeignKey('clientes.id'))
+    inventario = db.relationship('Inventario', backref='Pagamentos', lazy = True)
+    clientes = db.relationship('Clientes', backref='Pagamentos', lazy =True)
+    inventario_id = db.Column(db.Integer, db.ForeignKey('inventario.id'))
+    clientes_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     
     
