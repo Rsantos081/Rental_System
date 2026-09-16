@@ -19,6 +19,7 @@ class Clientes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome_cliente = db.Column(db.String(255), nullable=False)
     sobrenome_cliente = db.Column(db.String(255), nullable=False)
+    cpf = db.Column(db.String(20),nullable=False, unique = True)
     endereco = db.Column(db.String(255), nullable=False)
     
 class Pagamentos(db.Model):
