@@ -156,4 +156,87 @@ def get():
         }
         inventario_list.append(inventario_date)
     return jsonify (inventario_list)
- 
+
+@cliente_bp.route('/add', methods = ['POST'])
+@login_required
+def add_cliente():
+    data = request.json
+    if 'nome_cliente' in data and 'sobrenome_cliente' in data and 'endereco' in data and 'cpf' in data:
+       cliente = Clientes.query.filter_by(cpf = data['cpf']).first()
+       if  cliente:
+           return jsonify ({"mensagme":"Cliente ja Existe"})
+       clientes = Clientes(
+           nome_cliente = data['nome_cliente'],
+           sobrenome_cliente = data['sobrenome_cliente'],
+           cpf = data['cpf'],
+           endereco = data['endereco']           
+       )
+       db.session.add(clientes)
+       db.session.commit()
+       return jsonify ({"mensagem":"Cliente Adicionado com Sucesso"}), 200
+    return jsonify ({"mensagme":"Dados Inserido Invalidos"}),400
+
+@cliente_bp.route('/delete/<int:cliente_id>', methods = ['DELETE'])
+@login_required
+def delete_cliente(cliente_id):
+    cliente = Clientes.query.get(cliente_id)
+    if cliente:
+        db.session.delete(cliente)
+        db.session.commit()
+        return jsonify ({"mensagem":"Cliente Apagado com Sucesso"}), 200
+    return jsonify ({"mensagem":"Cliente não encontrado, Dados invalidos"}), 404
+
+@cliente_bp.route('/<int:cliente_id>', methods = ['GET'])
+@login_required
+def get_cliente(cliente_id):
+    cliente = Clientes.query.get(cliente_id)
+    if cliente:
+        return jsonify({
+            'nome_cliente': cliente.nome_cliente,
+            'sobrenome_cliente': cliente.sobrenome_cliente,
+            'endereco': cliente.endereco,
+            'cpf': cliente.cpf            
+        })
+    return jsonify ({"mensagem":"Cliente não Encontrado"}), 400
+
+@cliente_bp.route('/update/<int:clientes_id>', methods = ['PUT'])
+@login_required
+def update_cliente(clientes_id):
+    cliente = Clientes.query.get(clientes_id)
+    if not cliente:
+        return jsonify ({"mensagem":"Cliente não Encontrado"}), 404
+    data = request.json
+    if 'nome_cliente' in data:
+        cliente.nome_cliente = data['nome_cliente']
+        
+    if 'sobrenome_cliente' in data:
+        cliente.sobrenome_cliente = data['sobrenome_cliente']
+        
+    if 'endereco' in data:
+        cliente.endereco = data['endereco']
+        
+    if 'cpf' in data:
+        cliente.cpf = data['cpf']
+    db.session.commit()
+    return jsonify ({"mensagem":"Dados do Cliente Atualizado com Sucesso"}), 200
+
+@cliente_bp.route('/', methods = ['GET'])
+@login_required
+def cliente():
+    cliente = Clientes.query.all()
+    cliente_list = []
+    for clientes in cliente:
+        clientes_date= {
+            'id':clientes.id,
+            'nome_cliente':clientes.nome_cliente,
+            'sobrenome_cliente':clientes.sobrenome_cliente,
+            'endereco':clientes.endereco,
+            'cpf':clientes.cpf
+        }
+        cliente_list.append(clientes_date)
+    return jsonify (cliente_list)
+    
+@pagamentos_bp.route('/add', methods = ['POST'])
+@login_required
+def add_pagamento():
+    
