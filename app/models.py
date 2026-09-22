@@ -31,4 +31,14 @@ class Pagamentos(db.Model):
     inventario_id = db.Column(db.Integer, db.ForeignKey('inventario.id'))
     clientes_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     
+class Lacacao(db.model):
+    id = db.Column(db.Integer, primary_key = True)
+    data_inicio = db.Column(db.Date, nullable=False)
+    data_prevista_devolucao = db.Column(db.Date, nullable=False)
+    status_carro = db.Column(db.String(100), nullable=False)
+    valor = db.Column(db.Integer, nullable=False)
+    inventario = db.relationship('Inventario', backref='Locacao', lazy= True)
+    cliente = db.relationship('Clientes', backref='Locacao', lazy= True)
+    inventario_id = db.Column(db.Integer, db.ForeignKey('inventario.id'))
+    clientes_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     
