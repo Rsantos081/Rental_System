@@ -123,7 +123,7 @@ def get_modelo(inventario_id):
 def mod_modelo(inventario_id):
     inventarios = Inventario.query.get(inventario_id)
     if not inventarios:
-        return jsonify ({"mensagem":"Produto não Encontrado"}), 404
+        return jsonify ({"mensagem":"Modelo não Encontrado"}), 404
     data = request.json
     if 'modelo' in data:
         inventarios.modelo = data['modelo']
@@ -238,5 +238,77 @@ def cliente():
     
 @pagamentos_bp.route('/add', methods = ['POST'])
 @login_required
-def add_pagamento():
+def add_pagamentos():
+    data = request.json
+    if 'valor_pago' in data and 'data_pagamentos' in data and 'inventario_id' in data and 'clientes_id' in data:
+        inventario = Inventario.query.get(data['inventario_id'])
+        if not inventario:
+            return jsonify ({"mensagem":"Modelo não Encontrado"}), 404
+        cliente = Clientes.query.get(data['clientes_id'])
+        if not cliente:
+            return jsonify ({"mensagem":"Cliente não Encontrado"})
+        pagamento = Pagamentos(
+            valor_pago=data['valor_pago'],
+            data_pagamentos=data['data_pagamentos'],
+            inventario_id=data['inventario_id'],
+            clientes_id=data['clientes_id']
+        )
+        db.session.add(pagamento)
+        db.session.commit()
+        return jsonify ({"mensagem":"Pagamento de Carro Adicionado"}), 200
+    return jsonify ({"mensagem":"Credencias Invalidas do Pagamento"}), 400
+
+@pagamentos_bp.route('/delete/<int:pagamento_id>', methods = ['DELETE'])
+@login_required
+def delete_payments(pagamento_id):
+    pagamento = Pagamentos.query.get(pagamento_id)
+    if pagamento:
+        db.session.delete(pagamento)
+        db.session.commit()
+        return jsonify ({"mensagem":"Pagamento de Cliente Apagado"}), 200
+    return jsonify ({"mensagem":"Pagamento de Cliente não Encontrado"}), 400
+
+@pagamentos_bp.route('/<int:pagamento_id>', methods = ['GET'])
+@login_required
+def id_pagamento(pagamento_id):
+    pagamento = Pagamentos.query.get(pagamento_id)
+    if pagamento:
+        return jsonify({
+            'id': pagamento.id,
+            'valor_pago':pagamento.valor_pago,
+            'data_pagamentos':pagamento.data_pagamentos,
+            'inventario_id':pagamento.inventario_id,
+            'clientes_id':pagamento.clientes_id            
+        })
+    return jsonify ({"mensagem":"Pagamento não Encontrado"}), 404
+@pagamentos_bp.route('/<int:pagamento_id>', methods = ['PUT'])
+@login_required
+def update_pagamento(pagamento_id):
+    pagamento = Pagamentos.query.get(pagamento_id)
+    if not pagamento:
+        return jsonify ({"mensagem":"Pagamento de Cliente não Encontrado"}), 404
+    data =  request.json
     
+    if 'valor_pago' in data:
+        pagamento.valor_pago = data['valor_pago']
+    if 'data_pagamentos' in data:
+        pagamento.data_pagamentos = data['data_pagamentos']
+
+    db.session.commit()
+    return jsonify ({"mensagem":"Pagamento Atualizado com Sucesso"}), 200     
+
+@pagamentos_bp.route('/', methods = ['GET'])
+@login_required
+def get():
+    pagamento = Pagamentos.query.all()
+    pagamento_list = []
+    for pagamentos in pagamento:
+        pagamento_date = {
+            'id':pagamentos.id,
+            'valor_pago':pagamentos.valor_pago,
+            'data_pagamentos':pagamentos.data_pagamentos,
+            'inventario_id':pagamentos.inventario_id,
+            'clientes_id':pagamentos.clientes_id
+        }
+        pagamento_list.append(pagamento_date)
+    return jsonify (pagamento_list)
