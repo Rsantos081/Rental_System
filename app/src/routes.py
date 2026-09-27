@@ -387,3 +387,4 @@ def put_locacao(locacoes_id):
     
     db.session.commit()
     return jsonify ({"mensagem":"Locação Atualizado com sucesso"}), 200
+
