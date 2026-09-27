@@ -1,14 +1,15 @@
 from flask import request, jsonify
-from flask_login import login_required,current_user
+from flask_login import login_required
 
 from app.src import marcas_bp
 from app.src import inventario_bp
 from app.src import cliente_bp
-from app.src import pagamentos_bp 
+from app.src import pagamentos_bp
+from app.src import locacao_bp
 
 from app.extensions import db
 
-from app.models import Marcas,Inventario,Clientes,Pagamentos
+from app.models import Marcas,Inventario,Clientes,Pagamentos, Locacoes
 
 @marcas_bp.route ('/add', methods = ["POST"])
 @login_required
@@ -312,3 +313,77 @@ def get():
         }
         pagamento_list.append(pagamento_date)
     return jsonify (pagamento_list)
+
+@locacao_bp.route('/locacoes/add', methods = ['POST'])
+@login_required
+def add_locacao():
+    data = request.json
+    if 'data_inicio' in data and 'data_prevista_devolucao' in data and 'status_locacao' in data and 'valor' in data and 'inventario_id' in data and 'clientes_id' in data:
+        inventario = Inventario.query.get(data['inventario_id'])
+        if not inventario:
+            return jsonify ({"mensagem":"Veiculo não Encontrado"}), 404
+        locacoes = Locacoes.query.filter_by(inventario_id = data['inventario_id'], status_locacao = 'ATIVA').first()
+        if locacoes:
+            return jsonify ({"mensagem":"Veiculo ja esta Alugado"}), 409
+        cliente = Clientes.query.get(data['clientes_id'])
+        if not cliente:
+            return jsonify ({"mensagem":"Cliente não encontrado"})
+        locacao = Locacoes(
+            data_inicio = data['data_inicio'],
+            data_prevista_devolucao = data['data_prevista_devolucao'],
+            status_locacao = data['status_locacao'],
+            valor = data['valor'],
+            inventario_id = data['inventario_id'],
+            clientes_id = data['clientes_id']
+        )
+        db.session.add(locacao)
+        db.session.commit()
+        return jsonify ({"mesangem":"Locação criada com sucesso"})
+
+@locacao_bp.route('/locacoes', methods = ["GET"])
+@login_required
+def get_locacoes():
+    locacao = Locacoes.query.all()
+    locacao_list = []
+    for locacoes in locacao:
+        locacao_date = {
+            'id':locacoes.id,
+            'data_inicio':locacoes.data_inicio,
+            'data_prevista_devolucao':locacoes.data_prevista_devolucao,        
+            'status_locacao':locacoes.status_locacao,
+            'valor':locacoes.valor,
+            'inventario_id':locacoes.inventario_id,
+            'clientes_id':locacoes.clientes_id  
+        }
+        locacao_list.append(locacao_date)
+    return jsonify (locacao_list)
+
+@locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['GET'])
+@login_required
+def locacao_id(locacoes_id):
+    locacao = Locacoes.query.get(locacoes_id)
+    if locacao:
+        return jsonify ({
+            'id': locacao.id,
+            'data_inicio':locacao.data_inicio,
+            'data_prevista_devolucao':locacao.data_prevista_devolucao,
+            'status_locacao':locacao.status_locacao,
+            'valor':locacao.valor,
+            'inventario_id':locacao.inventario_id,
+            'clientes_id':locacao.clientes_id        
+        })
+    return jsonify ({"mensagem":"Locação não Encontrada"}), 404
+
+@locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['PATCH'])
+@login_required
+def put_locacao(locacoes_id):
+    locacao = Locacoes.query.get(locacoes_id)
+    if not locacao:
+        return jsonify ({"mensagem":"Locação não Encontrada"}), 404
+    data = request.json
+    
+    if 'status_locacao' in data:
+        locacao.status_locacao = data['status_locacao']
+    
+    db.session.commit()
+    return jsonify ({"mensagem":"Locação Atualizado com sucesso"}), 200

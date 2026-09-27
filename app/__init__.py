@@ -20,11 +20,13 @@ def create_app():
     from app.src import inventario_bp
     from app.src import cliente_bp
     from app.src import pagamentos_bp
+    from app.src import locacao_bp
     
     app.register_blueprint(marcas_bp)
     app.register_blueprint(inventario_bp)
     app.register_blueprint(cliente_bp)
     app.register_blueprint(pagamentos_bp)
+    app.register_blueprint(locacao_bp)
     
     db.init_app(app)
     login_manager.init_app(app)
