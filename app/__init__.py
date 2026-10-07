@@ -21,6 +21,7 @@ def create_app():
     from app.src import cliente_bp
     from app.src import pagamentos_bp
     from app.src import locacao_bp
+    from app.src import routes
     
     app.register_blueprint(marcas_bp)
     app.register_blueprint(inventario_bp)

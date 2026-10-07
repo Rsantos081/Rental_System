@@ -1,6 +1,8 @@
 from flask import request, jsonify
 from flask_login import login_required
 
+from app.service.locacoes_service import criar_locacao
+from app.service.locacoes_service import RegraNegocioError, atualizar_status_locacao
 from app.src import marcas_bp
 from app.src import inventario_bp
 from app.src import cliente_bp
@@ -19,8 +21,8 @@ def add_marcas():
         marcas = Marcas(nome_marcas=data["nome_marcas"], origem=data["origem"])
         db.session.add(marcas)
         db.session.commit()
-        return jsonify ({"mensagem":"Marca Adicionado com Sucesso"}), 201
-    return jsonify ({"mensagem":"Dados da Marca do Veiculo Invalida"}), 400
+        return jsonify ({"mensagem":"Marca adicionada com sucesso"}), 201
+    return jsonify ({"mensagem":"Dados da marca invalidos"}), 400
 
 @marcas_bp.route('/delete/<int:marcas_id>', methods =["DELETE"])
 @login_required
@@ -29,8 +31,8 @@ def delete_marca(marcas_id):
     if marcas:
         db.session.delete(marcas)   
         db.session.commit()
-        return jsonify ({"mensagem":"Marca Deletada com Sucesso"}), 200
-    return jsonify ({"mensagem":"Marca do Veiculo não Encontrada"}), 400
+        return jsonify ({"mensagem":"Marca excluida com sucesso"}), 200
+    return jsonify ({"mensagem":"Marca não encontrada"}), 400
  
 @marcas_bp.route('/<int:marcas_id>', methods = ["GET"])
 @login_required 
@@ -42,14 +44,14 @@ def get_marca(marcas_id):
             'nome_marcas':marcas.nome_marcas,
             'origem':marcas.origem
         })
-    return jsonify ({"mensagem":"Marca do Veiculo naõ Encontrada"}), 404
+    return jsonify ({"mensagem":"Marca naõ encontrada"}), 404
 
 @marcas_bp.route('/upadate/<int:marcas_id>', methods = ["PUT"])
 @login_required
 def edit_marca(marcas_id):
     marcas = Marcas.query.get(marcas_id)
     if not marcas:
-        return jsonify ({"mensagem":"Veiculo não Encontrado"}), 404
+        return jsonify ({"mensagem":"Marca não encontrada"}), 404
     data = request.json
     if 'nome_marcas' in data:
         marcas.nome_marcas = data['nome_marcas']
@@ -58,7 +60,7 @@ def edit_marca(marcas_id):
         marcas.origem = data['origem']    
     
     db.session.commit()
-    return jsonify ({"mensagem":"Veiculo Atualizado com Sucesso"}), 200
+    return jsonify ({"mensagem":"Marca atualizada com sucesso"}), 200
 
 @marcas_bp.route('/', methods = ['GET'])
 @login_required
@@ -78,21 +80,21 @@ def get():
 @login_required
 def add_modelo():
     data = request.json
-    if 'modelo' in data and 'transmisao' in data and 'motor' in data and 'combustivel' in data and 'marcas_id' in data:
+    if 'modelo' in data and 'transmissao' in data and 'motor' in data and 'combustivel' in data and 'marcas_id' in data:
         marca = Marcas.query.get(data['marcas_id'])
         if not marca:
-            return jsonify ({"mensagem":"Marca não Encontrada"}), 404
+            return jsonify ({"mensagem":"Marca não encontrada"}), 404
         inventarios = Inventario(
                 modelo=data['modelo'], 
-                transmisao=data['transmisao'], 
+                transmissao=data['transmissao'], 
                 motor=data['motor'], 
                 combustivel=data['combustivel'],
                 marcas_id =data['marcas_id']
         )   
         db.session.add(inventarios)
         db.session.commit()
-        return jsonify ({"mensagem":"Modelo de Carro Adicionado com Sucesso"}), 201
-    return jsonify ({"mensagem":"Crendencias do Modelo Invalido"}), 400
+        return jsonify ({"mensagem":"Veiculo adicionado com sucesso"}), 201
+    return jsonify ({"mensagem":"Dados do veiculo invalidos"}), 400
 
 @inventario_bp.route('/delete/<int:inventario_id>', methods = ['DELETE'])
 @login_required
@@ -101,8 +103,8 @@ def delete_modelo(inventario_id):
     if inventarios:
         db.session.delete(inventarios)
         db.session.commit()
-        return jsonify ({"mensagem":"Modelo de carro deletado com sucesso"}), 200
-    return jsonify ({"mensagem":"Modelo de carro nao Encontrado"}), 400
+        return jsonify ({"mensagem":"Veiculo excluido com sucesso"}), 200
+    return jsonify ({"mensagem":"Veiculo não encontrado"}), 400
 
 @inventario_bp.route('/<int:inventario_id>', methods = ["GET"])
 @login_required
@@ -112,19 +114,19 @@ def get_modelo(inventario_id):
         return jsonify ({
             'id': inventarios.id,
             'modelo':inventarios.modelo,
-            'transmisao':inventarios.transmisao,
+            'transmissao':inventarios.transmissao,
             'motor':inventarios.motor,
             'combustivel':inventarios.combustivel,
             'marcas_id':inventarios.marcas_id
         })
-    return jsonify ({"mensagem":"Modelo de carro nao encontrado"}), 404
+    return jsonify ({"mensagem":"Veiculo não encontrado"}), 404
 
 @inventario_bp.route('/<int:inventario_id>', methods = ["PUT"])
 @login_required
 def mod_modelo(inventario_id):
     inventarios = Inventario.query.get(inventario_id)
     if not inventarios:
-        return jsonify ({"mensagem":"Modelo não Encontrado"}), 404
+        return jsonify ({"mensagem":"Veiculo não encontrado"}), 404
     data = request.json
     if 'modelo' in data:
         inventarios.modelo = data['modelo']
@@ -139,7 +141,7 @@ def mod_modelo(inventario_id):
         inventarios.combustivel = data['combustivel']
 
     db.session.commit()
-    return jsonify ({"mensagem":"Produto Atualizado com Sucesso"}), 200         
+    return jsonify ({"mensagem":"Veiculo atualizado com sucesso"}), 200         
 
 @inventario_bp.route('/', methods = ['GET'])
 @login_required
@@ -165,7 +167,7 @@ def add_cliente():
     if 'nome_cliente' in data and 'sobrenome_cliente' in data and 'endereco' in data and 'cpf' in data:
        cliente = Clientes.query.filter_by(cpf = data['cpf']).first()
        if  cliente:
-           return jsonify ({"mensagme":"Cliente ja Existe"})
+           return jsonify ({"mensagme":"Cliente já cadastrado"})
        clientes = Clientes(
            nome_cliente = data['nome_cliente'],
            sobrenome_cliente = data['sobrenome_cliente'],
@@ -174,8 +176,8 @@ def add_cliente():
        )
        db.session.add(clientes)
        db.session.commit()
-       return jsonify ({"mensagem":"Cliente Adicionado com Sucesso"}), 200
-    return jsonify ({"mensagme":"Dados Inserido Invalidos"}),400
+       return jsonify ({"mensagem":"Cliente cadastrado com sucesso"}), 200
+    return jsonify ({"mensagme":"Dados do cliente inválidos"}),400
 
 @cliente_bp.route('/delete/<int:cliente_id>', methods = ['DELETE'])
 @login_required
@@ -184,8 +186,8 @@ def delete_cliente(cliente_id):
     if cliente:
         db.session.delete(cliente)
         db.session.commit()
-        return jsonify ({"mensagem":"Cliente Apagado com Sucesso"}), 200
-    return jsonify ({"mensagem":"Cliente não encontrado, Dados invalidos"}), 404
+        return jsonify ({"mensagem":"Cliente excluído com sucesso"}), 200
+    return jsonify ({"mensagem":"Cliente não encontrado"}), 404
 
 @cliente_bp.route('/<int:cliente_id>', methods = ['GET'])
 @login_required
@@ -198,14 +200,14 @@ def get_cliente(cliente_id):
             'endereco': cliente.endereco,
             'cpf': cliente.cpf            
         })
-    return jsonify ({"mensagem":"Cliente não Encontrado"}), 400
+    return jsonify ({"mensagem":"Cliente não encontrado"}), 400
 
 @cliente_bp.route('/update/<int:clientes_id>', methods = ['PUT'])
 @login_required
 def update_cliente(clientes_id):
     cliente = Clientes.query.get(clientes_id)
     if not cliente:
-        return jsonify ({"mensagem":"Cliente não Encontrado"}), 404
+        return jsonify ({"mensagem":"Cliente não encontrado"}), 404
     data = request.json
     if 'nome_cliente' in data:
         cliente.nome_cliente = data['nome_cliente']
@@ -219,7 +221,7 @@ def update_cliente(clientes_id):
     if 'cpf' in data:
         cliente.cpf = data['cpf']
     db.session.commit()
-    return jsonify ({"mensagem":"Dados do Cliente Atualizado com Sucesso"}), 200
+    return jsonify ({"mensagem":"Cliente atualizado com sucesso"}), 200
 
 @cliente_bp.route('/', methods = ['GET'])
 @login_required
@@ -256,8 +258,8 @@ def add_pagamentos():
         )
         db.session.add(pagamento)
         db.session.commit()
-        return jsonify ({"mensagem":"Pagamento de Carro Adicionado"}), 200
-    return jsonify ({"mensagem":"Credencias Invalidas do Pagamento"}), 400
+        return jsonify ({"mensagem":"Pagamento cadastrado com sucesso"}), 200
+    return jsonify ({"mensagem":"Dados do pagamento inválidos"}), 400
 
 @pagamentos_bp.route('/delete/<int:pagamento_id>', methods = ['DELETE'])
 @login_required
@@ -266,8 +268,8 @@ def delete_payments(pagamento_id):
     if pagamento:
         db.session.delete(pagamento)
         db.session.commit()
-        return jsonify ({"mensagem":"Pagamento de Cliente Apagado"}), 200
-    return jsonify ({"mensagem":"Pagamento de Cliente não Encontrado"}), 400
+        return jsonify ({"mensagem":"Pagamento excluído com sucesso"}), 200
+    return jsonify ({"mensagem":"Pagamento não encontrado"}), 400
 
 @pagamentos_bp.route('/<int:pagamento_id>', methods = ['GET'])
 @login_required
@@ -296,7 +298,7 @@ def update_pagamento(pagamento_id):
         pagamento.data_pagamentos = data['data_pagamentos']
 
     db.session.commit()
-    return jsonify ({"mensagem":"Pagamento Atualizado com Sucesso"}), 200     
+    return jsonify ({"mensagem":"Pagamento atualizado com sucesso"}), 200     
 
 @pagamentos_bp.route('/', methods = ['GET'])
 @login_required
@@ -315,33 +317,15 @@ def get():
     return jsonify (pagamento_list)
 
 @locacao_bp.route('/locacoes/add', methods = ['POST'])
-@login_required
-def add_locacao():
-    data = request.json
-    if 'data_inicio' in data and 'data_prevista_devolucao' in data and 'status_locacao' in data and 'valor' in data and 'inventario_id' in data and 'clientes_id' in data:
-        inventario = Inventario.query.get(data['inventario_id'])
-        if not inventario:
-            return jsonify ({"mensagem":"Veiculo não Encontrado"}), 404
-        locacoes = Locacoes.query.filter_by(inventario_id = data['inventario_id'], status_locacao = 'ATIVA').first()
-        if locacoes:
-            return jsonify ({"mensagem":"Veiculo ja esta Alugado"}), 409
-        cliente = Clientes.query.get(data['clientes_id'])
-        if not cliente:
-            return jsonify ({"mensagem":"Cliente não encontrado"})
-        locacao = Locacoes(
-            data_inicio = data['data_inicio'],
-            data_prevista_devolucao = data['data_prevista_devolucao'],
-            status_locacao = data['status_locacao'],
-            valor = data['valor'],
-            inventario_id = data['inventario_id'],
-            clientes_id = data['clientes_id']
-        )
-        db.session.add(locacao)
-        db.session.commit()
-        return jsonify ({"mesangem":"Locação criada com sucesso"})
 
+def add_locacao():
+    try:
+        locacao = criar_locacao(request.json)
+    except RegraNegocioError as erro:
+        return jsonify ({"mensagem":erro.mensagem}), erro.status_code  
+    return jsonify ({"mensagem":"Locação criada com sucesso", "id":locacao.id}), 201
+    
 @locacao_bp.route('/locacoes', methods = ["GET"])
-@login_required
 def get_locacoes():
     locacao = Locacoes.query.all()
     locacao_list = []
@@ -372,19 +356,13 @@ def locacao_id(locacoes_id):
             'inventario_id':locacao.inventario_id,
             'clientes_id':locacao.clientes_id        
         })
-    return jsonify ({"mensagem":"Locação não Encontrada"}), 404
+    return jsonify ({"mensagem":"Locação não encontrada"}), 404
 
 @locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['PATCH'])
-@login_required
-def put_locacao(locacoes_id):
-    locacao = Locacoes.query.get(locacoes_id)
-    if not locacao:
-        return jsonify ({"mensagem":"Locação não Encontrada"}), 404
-    data = request.json
-    
-    if 'status_locacao' in data:
-        locacao.status_locacao = data['status_locacao']
-    
-    db.session.commit()
-    return jsonify ({"mensagem":"Locação Atualizado com sucesso"}), 200
-
+def patch_locacao(locacoes_id):
+    novo_status = request.json.get('status_locacao')
+    try:
+        atualizar_status_locacao(locacoes_id, novo_status)
+    except RegraNegocioError as erro:
+        return jsonify ({"mensagem":erro.mensagem}), erro.status_code
+    return jsonify ({"mensagem":"Locação atualizada com sucesso"}), 200
