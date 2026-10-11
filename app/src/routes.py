@@ -13,6 +13,9 @@ from app.extensions import db
 
 from app.models import Marcas,Inventario,Clientes,Pagamentos, Locacoes
 
+def valor_diaria_valido(valor):
+    return isinstance(valor,(int, float)) and not isinstance (valor,bool) and valor > 0
+
 @marcas_bp.route ('/add', methods = ["POST"])
 @login_required
 def add_marcas():
@@ -80,14 +83,17 @@ def get():
 @login_required
 def add_modelo():
     data = request.json
-    if 'modelo' in data and 'transmissao' in data and 'motor' in data and 'combustivel' in data and 'marcas_id' in data:
+    if 'modelo' in data and 'transmissao' in data and 'motor' in data and 'combustivel' in data and 'marcas_id' in data and 'valor_diaria' in data:
         marca = Marcas.query.get(data['marcas_id'])
         if not marca:
             return jsonify ({"mensagem":"Marca não encontrada"}), 404
+        if not valor_diaria_valido(data['valor_diaria']):
+            return jsonify ({"mensagem":"Valor da diaria invalido"}), 400
         inventarios = Inventario(
                 modelo=data['modelo'], 
                 transmissao=data['transmissao'], 
                 motor=data['motor'], 
+                valor_diaria=data['valor_diaria'],
                 combustivel=data['combustivel'],
                 marcas_id =data['marcas_id']
         )   
@@ -116,6 +122,7 @@ def get_modelo(inventario_id):
             'modelo':inventarios.modelo,
             'transmissao':inventarios.transmissao,
             'motor':inventarios.motor,
+            'valor_diaria':inventarios.valor_diaria,
             'combustivel':inventarios.combustivel,
             'marcas_id':inventarios.marcas_id
         })
@@ -139,6 +146,9 @@ def mod_modelo(inventario_id):
     
     if 'combustivel' in data:
         inventarios.combustivel = data['combustivel']
+    
+    if 'valor_diaria' in data:
+        inventarios.valor_diari = data['valor_diaria']
 
     db.session.commit()
     return jsonify ({"mensagem":"Veiculo atualizado com sucesso"}), 200         
@@ -176,8 +186,8 @@ def add_cliente():
        )
        db.session.add(clientes)
        db.session.commit()
-       return jsonify ({"mensagem":"Cliente cadastrado com sucesso"}), 200
-    return jsonify ({"mensagme":"Dados do cliente inválidos"}),400
+       return jsonify ({"mensagem":"Cliente cadastrado com sucesso"}), 409
+    return jsonify ({"mensagme":"Dados do cliente inválidos"}),404
 
 @cliente_bp.route('/delete/<int:cliente_id>', methods = ['DELETE'])
 @login_required
@@ -249,7 +259,7 @@ def add_pagamentos():
             return jsonify ({"mensagem":"Modelo não Encontrado"}), 404
         cliente = Clientes.query.get(data['clientes_id'])
         if not cliente:
-            return jsonify ({"mensagem":"Cliente não Encontrado"})
+            return jsonify ({"mensagem":"Cliente não Encontrado"}), 404
         pagamento = Pagamentos(
             valor_pago=data['valor_pago'],
             data_pagamentos=data['data_pagamentos'],
@@ -317,7 +327,7 @@ def get():
     return jsonify (pagamento_list)
 
 @locacao_bp.route('/locacoes/add', methods = ['POST'])
-
+@login_required
 def add_locacao():
     try:
         locacao = criar_locacao(request.json)
@@ -326,6 +336,7 @@ def add_locacao():
     return jsonify ({"mensagem":"Locação criada com sucesso", "id":locacao.id}), 201
     
 @locacao_bp.route('/locacoes', methods = ["GET"])
+@login_required
 def get_locacoes():
     locacao = Locacoes.query.all()
     locacao_list = []
@@ -359,6 +370,7 @@ def locacao_id(locacoes_id):
     return jsonify ({"mensagem":"Locação não encontrada"}), 404
 
 @locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['PATCH'])
+@login_required
 def patch_locacao(locacoes_id):
     novo_status = request.json.get('status_locacao')
     try:

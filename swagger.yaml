@@ -7,26 +7,28 @@ info:
     A API possui recursos para marcas, veículos do inventário, clientes,
     pagamentos e locações.
 
-    As rotas protegidas utilizam a sessão do Flask-Login.
+    As rotas protegidas utilizam a sessão do Flask-Login (cookie `session`).
+    Valores monetários (`Decimal`) e datas são serializados pelo Flask como texto:
+    `"500.00"` e `"Thu, 08 Oct 2026 00:00:00 GMT"`.
   version: 1.0.0
   contact:
     name: Rental System
 
 servers:
-  - url: http://127.0.0.1:5000
-    description: Servidor local
+- url: http://127.0.0.1:5000
+  description: Servidor local
 
 tags:
-  - name: Marcas
-    description: Gerenciamento das marcas dos veículos
-  - name: Inventário
-    description: Gerenciamento dos veículos disponíveis no inventário
-  - name: Clientes
-    description: Gerenciamento dos clientes
-  - name: Pagamentos
-    description: Gerenciamento dos pagamentos
-  - name: Locações
-    description: Gerenciamento das locações e seus status
+- name: Marcas
+  description: Gerenciamento das marcas dos veículos
+- name: Inventário
+  description: Gerenciamento dos veículos disponíveis no inventário
+- name: Clientes
+  description: Gerenciamento dos clientes
+- name: Pagamentos
+  description: Gerenciamento dos pagamentos
+- name: Locações
+  description: Gerenciamento das locações e seus status
 
 components:
   securitySchemes:
@@ -35,7 +37,6 @@ components:
       in: cookie
       name: session
       description: Sessão criada pelo Flask-Login.
-
   schemas:
     Mensagem:
       type: object
@@ -43,12 +44,11 @@ components:
         mensagem:
           type: string
           example: Operação realizada com sucesso
-
     MarcaInput:
       type: object
       required:
-        - nome_marcas
-        - origem
+      - nome_marcas
+      - origem
       properties:
         nome_marcas:
           type: string
@@ -56,7 +56,6 @@ components:
         origem:
           type: string
           example: Japão
-
     Marca:
       type: object
       properties:
@@ -69,15 +68,15 @@ components:
         origem:
           type: string
           example: Japão
-
     VeiculoInput:
       type: object
       required:
-        - modelo
-        - transmissao
-        - motor
-        - combustivel
-        - marcas_id
+      - modelo
+      - transmissao
+      - motor
+      - combustivel
+      - marcas_id
+      - valor_diaria
       properties:
         modelo:
           type: string
@@ -87,14 +86,19 @@ components:
           example: Automática
         motor:
           type: string
-          example: 2.0
+          example: '2.0'
         combustivel:
           type: string
           example: Flex
         marcas_id:
           type: integer
           example: 1
-
+        valor_diaria:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 150.0
+          description: Valor da diária de locação do veículo (maior que zero)
     Veiculo:
       type: object
       properties:
@@ -109,21 +113,24 @@ components:
           example: Automática
         motor:
           type: string
-          example: 2.0
+          example: '2.0'
         combustivel:
           type: string
           example: Flex
+        valor_diaria:
+          type: string
+          example: '150.00'
+          description: Decimal serializado como texto pelo Flask
         marcas_id:
           type: integer
           example: 1
-
     ClienteInput:
       type: object
       required:
-        - nome_cliente
-        - sobrenome_cliente
-        - endereco
-        - cpf
+      - nome_cliente
+      - sobrenome_cliente
+      - endereco
+      - cpf
       properties:
         nome_cliente:
           type: string
@@ -136,8 +143,7 @@ components:
           example: Rua Exemplo, 100
         cpf:
           type: string
-          example: "12345678900"
-
+          example: '12345678900'
     Cliente:
       type: object
       properties:
@@ -155,31 +161,29 @@ components:
           example: Rua Exemplo, 100
         cpf:
           type: string
-          example: "12345678900"
-
+          example: '12345678900'
     PagamentoInput:
       type: object
       required:
-        - valor_pago
-        - data_pagamentos
-        - inventario_id
-        - clientes_id
+      - valor_pago
+      - data_pagamentos
+      - inventario_id
+      - clientes_id
       properties:
         valor_pago:
           type: number
           format: double
-          example: 500.00
+          example: 500.0
         data_pagamentos:
           type: string
           format: date
-          example: "2026-10-08"
+          example: '2026-10-08'
         inventario_id:
           type: integer
           example: 1
         clientes_id:
           type: integer
           example: 1
-
     Pagamento:
       type: object
       properties:
@@ -187,42 +191,35 @@ components:
           type: integer
           example: 1
         valor_pago:
-          type: number
-          format: double
-          example: 500.00
+          type: string
+          example: '500.00'
+          description: Decimal serializado como texto pelo Flask
         data_pagamentos:
           type: string
-          format: date
-          example: "2026-10-08"
+          example: Thu, 08 Oct 2026 00:00:00 GMT
+          description: Data serializada pelo Flask no formato RFC 822
         inventario_id:
           type: integer
           example: 1
         clientes_id:
           type: integer
           example: 1
-
     LocacaoInput:
       type: object
       required:
-        - data_inicio
-        - data_prevista_devolucao
-        - valor
-        - inventario_id
-        - clientes_id
+      - data_inicio
+      - data_prevista_devolucao
+      - inventario_id
+      - clientes_id
       properties:
         data_inicio:
           type: string
           format: date
-          example: "2026-10-08"
+          example: '2026-10-08'
         data_prevista_devolucao:
           type: string
           format: date
-          example: "2026-10-15"
-        valor:
-          type: number
-          format: double
-          minimum: 0.01
-          example: 500.00
+          example: '2026-10-15'
         inventario_id:
           type: integer
           example: 1
@@ -230,9 +227,10 @@ components:
           type: integer
           example: 1
       description: |
-        O status da locação não é enviado na criação.
-        O serviço cria automaticamente a locação com status ATIVA.
-
+        O status e o valor não são enviados na criação.
+        O serviço cria a locação com status ATIVA e calcula o valor:
+        número de dias (devolução prevista - início) x valor da diária do veículo.
+        Se `valor` for enviado no corpo, ele é ignorado.
     Locacao:
       type: object
       properties:
@@ -241,819 +239,106 @@ components:
           example: 1
         data_inicio:
           type: string
-          format: date
-          example: "2026-10-08"
+          example: Thu, 08 Oct 2026 00:00:00 GMT
+          description: Data serializada pelo Flask no formato RFC 822
         data_prevista_devolucao:
           type: string
-          format: date
-          example: "2026-10-15"
+          example: Thu, 15 Oct 2026 00:00:00 GMT
+          description: Data serializada pelo Flask no formato RFC 822
         status_locacao:
           type: string
           enum:
-            - ATIVA
-            - ATRASADA
-            - FINALIZADA
-            - CANCELADA
+          - ATIVA
+          - ATRASADA
+          - FINALIZADA
+          - CANCELADA
           example: ATIVA
         valor:
-          type: number
-          format: double
-          example: 500.00
+          type: string
+          example: '500.00'
+          description: Calculado pelo servidor (dias x diária do veículo); Decimal serializado como texto pelo Flask
         inventario_id:
           type: integer
           example: 1
         clientes_id:
           type: integer
           example: 1
-
     StatusLocacaoInput:
       type: object
       required:
-        - status_locacao
+      - status_locacao
       properties:
         status_locacao:
           type: string
           enum:
-            - ATIVA
-            - ATRASADA
-            - FINALIZADA
-            - CANCELADA
+          - ATIVA
+          - ATRASADA
+          - FINALIZADA
+          - CANCELADA
           example: FINALIZADA
-
-paths:
-
-  /api/marca/add:
-    post:
-      tags:
-        - Marcas
-      summary: Cadastrar marca
-      description: Cadastra uma nova marca de veículo.
-      security:
-        - cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MarcaInput'
-            example:
-              nome_marcas: Toyota
-              origem: Japão
-      responses:
-        '201':
-          description: Marca criada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca adicionada com sucesso
-        '400':
-          description: Dados da marca inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Dados da marca invalidos
-
-  /api/marca/:
-    get:
-      tags:
-        - Marcas
-      summary: Listar marcas
-      description: Retorna todas as marcas cadastradas.
-      security:
-        - cookieAuth: []
-      responses:
-        '200':
-          description: Lista de marcas
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Marca'
-
-  /api/marca/{marcas_id}:
-    get:
-      tags:
-        - Marcas
-      summary: Buscar marca por ID
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/MarcasId'
-      responses:
-        '200':
-          description: Marca encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Marca'
-        '404':
-          description: Marca não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca naõ encontrada
-
-  /api/marca/upadate/{marcas_id}:
-    put:
-      tags:
-        - Marcas
-      summary: Atualizar marca
-      description: Atualiza parcialmente os campos enviados da marca.
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/MarcasId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MarcaInput'
-            example:
-              nome_marcas: Toyota
-              origem: Japão
-      responses:
-        '200':
-          description: Marca atualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca atualizada com sucesso
-        '404':
-          description: Marca não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca não encontrada
-
-  /api/marca/delete/{marcas_id}:
-    delete:
-      tags:
-        - Marcas
-      summary: Excluir marca
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/MarcasId'
-      responses:
-        '200':
-          description: Marca excluída
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca excluida com sucesso
-        '400':
-          description: Marca não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca não encontrada
-
-  /api/inventario/add:
-    post:
-      tags:
-        - Inventário
-      summary: Cadastrar veículo
-      description: Cadastra um veículo e associa o veículo a uma marca existente.
-      security:
-        - cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VeiculoInput'
-            example:
-              modelo: Corolla
-              transmissao: Automática
-              motor: 2.0
-              combustivel: Flex
-              marcas_id: 1
-      responses:
-        '201':
-          description: Veículo criado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo adicionado com sucesso
-        '400':
-          description: Dados do veículo inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Dados do veiculo invalidos
-        '404':
-          description: Marca informada não existe
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Marca não encontrada
-
-  /api/inventario/:
-    get:
-      tags:
-        - Inventário
-      summary: Listar veículos
-      security:
-        - cookieAuth: []
-      responses:
-        '200':
-          description: Lista de veículos
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Veiculo'
-
-  /api/inventario/{inventario_id}:
-    get:
-      tags:
-        - Inventário
-      summary: Buscar veículo por ID
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/InventarioId'
-      responses:
-        '200':
-          description: Veículo encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Veiculo'
-        '404':
-          description: Veículo não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo não encontrado
-    put:
-      tags:
-        - Inventário
-      summary: Atualizar veículo
-      description: Atualiza os campos enviados do veículo.
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/InventarioId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VeiculoInput'
-            example:
-              modelo: Corolla XEi
-              transmissao: Automática
-              motor: 2.0
-              combustivel: Flex
-              marcas_id: 1
-      responses:
-        '200':
-          description: Veículo atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo atualizado com sucesso
-        '404':
-          description: Veículo não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo não encontrado
-
-  /api/inventario/delete/{inventario_id}:
-    delete:
-      tags:
-        - Inventário
-      summary: Excluir veículo
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/InventarioId'
-      responses:
-        '200':
-          description: Veículo excluído
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo excluido com sucesso
-        '400':
-          description: Veículo não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo não encontrado
-
-  /api/cliente/add:
-    post:
-      tags:
-        - Clientes
-      summary: Cadastrar cliente
-      security:
-        - cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClienteInput'
-            example:
-              nome_cliente: Ruan
-              sobrenome_cliente: Santos
-              endereco: Rua Exemplo, 100
-              cpf: "12345678900"
-      responses:
-        '200':
-          description: Cliente cadastrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente cadastrado com sucesso
-        '400':
-          description: Dados inválidos
-          content:
-            application/json:
-              schema:
-                type: object
-              examples:
-                dados_invalidos:
-                  value:
-                    mensagme: Dados do cliente inválidos
-                cpf_duplicado:
-                  value:
-                    mensagme: Cliente já cadastrado
-
-  /api/cliente/:
-    get:
-      tags:
-        - Clientes
-      summary: Listar clientes
-      security:
-        - cookieAuth: []
-      responses:
-        '200':
-          description: Lista de clientes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Cliente'
-
-  /api/cliente/{cliente_id}:
-    get:
-      tags:
-        - Clientes
-      summary: Buscar cliente por ID
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      responses:
-        '200':
-          description: Cliente encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cliente'
-        '400':
-          description: Cliente não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente não encontrado
-
-  /api/cliente/update/{clientes_id}:
-    put:
-      tags:
-        - Clientes
-      summary: Atualizar cliente
-      description: Atualiza os campos enviados do cliente.
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClientesId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClienteInput'
-            example:
-              nome_cliente: Ruan
-              sobrenome_cliente: Santos
-              endereco: Rua Nova, 200
-              cpf: "12345678900"
-      responses:
-        '200':
-          description: Cliente atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente atualizado com sucesso
-        '404':
-          description: Cliente não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente não encontrado
-
-  /api/cliente/delete/{cliente_id}:
-    delete:
-      tags:
-        - Clientes
-      summary: Excluir cliente
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      responses:
-        '200':
-          description: Cliente excluído
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente excluído com sucesso
-        '404':
-          description: Cliente não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Cliente não encontrado
-
-  /api/pagamentos/add:
-    post:
-      tags:
-        - Pagamentos
-      summary: Cadastrar pagamento
-      security:
-        - cookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PagamentoInput'
-            example:
-              valor_pago: 500.00
-              data_pagamentos: "2026-10-08"
-              inventario_id: 1
-              clientes_id: 1
-      responses:
-        '200':
-          description: Pagamento cadastrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento cadastrado com sucesso
-        '400':
-          description: Dados do pagamento inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Dados do pagamento inválidos
-        '404':
-          description: Cliente ou veículo não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              examples:
-                veiculo:
-                  value:
-                    mensagem: Modelo não Encontrado
-                cliente:
-                  value:
-                    mensagem: Cliente não Encontrado
-
-  /api/pagamentos/:
-    get:
-      tags:
-        - Pagamentos
-      summary: Listar pagamentos
-      security:
-        - cookieAuth: []
-      responses:
-        '200':
-          description: Lista de pagamentos
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pagamento'
-
-  /api/pagamentos/{pagamento_id}:
-    get:
-      tags:
-        - Pagamentos
-      summary: Buscar pagamento por ID
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/PagamentoId'
-      responses:
-        '200':
-          description: Pagamento encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pagamento'
-        '404':
-          description: Pagamento não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento não Encontrado
-    put:
-      tags:
-        - Pagamentos
-      summary: Atualizar pagamento
-      description: Atualiza valor e/ou data do pagamento.
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/PagamentoId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                valor_pago:
-                  type: number
-                  format: double
-                  example: 600.00
-                data_pagamentos:
-                  type: string
-                  format: date
-                  example: "2026-10-08"
-      responses:
-        '200':
-          description: Pagamento atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento atualizado com sucesso
-        '404':
-          description: Pagamento não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento de Cliente não Encontrado
-
-  /api/pagamentos/delete/{pagamento_id}:
-    delete:
-      tags:
-        - Pagamentos
-      summary: Excluir pagamento
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/PagamentoId'
-      responses:
-        '200':
-          description: Pagamento excluído
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento excluído com sucesso
-        '400':
-          description: Pagamento não encontrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Pagamento não encontrado
-
-  /api/locacoes/add:
-    post:
-      tags:
-        - Locações
-      summary: Criar locação
-      description: |
-        Cria uma locação. O status é definido automaticamente como ATIVA.
-
-        Regras:
-        - O cliente deve existir.
-        - O veículo deve existir.
-        - O veículo não pode possuir outra locação ATIVA.
-        - As datas devem estar no formato YYYY-MM-DD.
-        - A data prevista de devolução deve ser posterior à data de início.
-        - O valor deve ser maior que zero.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LocacaoInput'
-            example:
-              data_inicio: "2026-10-08"
-              data_prevista_devolucao: "2026-10-15"
-              valor: 500.00
-              inventario_id: 1
-              clientes_id: 1
-      responses:
-        '201':
-          description: Locação criada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  mensagem:
-                    type: string
-                  id:
-                    type: integer
-                example:
-                  mensagem: Locação criada com sucesso
-                  id: 1
-        '400':
-          description: Regra de negócio ou dados inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              examples:
-                cliente:
-                  value:
-                    mensagem: Cliente não encontrado
-                veiculo:
-                  value:
-                    mensagem: Veiculo não Encontrado
-                data:
-                  value:
-                    mensagem: Formato de Data Invalido
-                periodo:
-                  value:
-                    mensagem: Data de Devolução deve ser posterior á data de inicioent
-                valor:
-                  value:
-                    mensagem: Valor invalido
-        '409':
-          description: Veículo já possui uma locação ativa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Veiculo ja esta Alugado
-
-  /api/locacoes:
-    get:
-      tags:
-        - Locações
-      summary: Listar locações
-      description: Retorna todas as locações cadastradas.
-      responses:
-        '200':
-          description: Lista de locações
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Locacao'
-
-  /api/locacao/{locacoes_id}:
-    get:
-      tags:
-        - Locações
-      summary: Buscar locação por ID
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/LocacaoId'
-      responses:
-        '200':
-          description: Locação encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Locacao'
-        '404':
-          description: Locação não encontrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Locação não encontrada
-    patch:
-      tags:
-        - Locações
-      summary: Atualizar status da locação
-      description: |
-        Altera somente o status da locação.
-
-        Transições permitidas:
-        - ATIVA -> FINALIZADA
-        - ATIVA -> ATRASADA
-        - ATIVA -> CANCELADA
-        - ATRASADA -> FINALIZADA
-
-        Estados FINALIZADA e CANCELADA não possuem novas transições.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StatusLocacaoInput'
-            example:
-              status_locacao: FINALIZADA
-      parameters:
-        - $ref: '#/components/parameters/LocacaoId'
-      responses:
-        '200':
-          description: Status atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Locação atualizada com sucesso
-        '400':
-          description: Locação não encontrada ou status inválido
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              examples:
-                nao_encontrada:
-                  value:
-                    mensagem: Locação não Encontrada
-                status_invalido:
-                  value:
-                    mensagem: Status invalido
-        '409':
-          description: Transição de status não permitida
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Transição de status não permitida
-
-components:
+    MarcaUpdate:
+      type: object
+      description: Todos os campos são opcionais; apenas os enviados são atualizados.
+      properties:
+        nome_marcas:
+          type: string
+          example: Toyota
+        origem:
+          type: string
+          example: Japão
+    VeiculoUpdate:
+      type: object
+      description: Todos os campos são opcionais. A marca do veículo (`marcas_id`) não é alterada por este endpoint.
+      properties:
+        modelo:
+          type: string
+          example: Corolla
+        transmissao:
+          type: string
+          example: Automática
+        motor:
+          type: string
+          example: '2.0'
+        combustivel:
+          type: string
+          example: Flex
+        valor_diaria:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 150.0
+    ClienteUpdate:
+      type: object
+      description: Todos os campos são opcionais; apenas os enviados são atualizados.
+      properties:
+        nome_cliente:
+          type: string
+          example: Ruan
+        sobrenome_cliente:
+          type: string
+          example: Santos
+        endereco:
+          type: string
+          example: Rua Exemplo, 100
+        cpf:
+          type: string
+          example: '12345678900'
+    ClienteDetalhe:
+      type: object
+      description: Retorno da busca por ID (não inclui o campo `id`).
+      properties:
+        nome_cliente:
+          type: string
+          example: Ruan
+        sobrenome_cliente:
+          type: string
+          example: Santos
+        endereco:
+          type: string
+          example: Rua Exemplo, 100
+        cpf:
+          type: string
+          example: '12345678900'
   parameters:
     MarcasId:
       name: marcas_id
@@ -1103,3 +388,829 @@ components:
         type: integer
         minimum: 1
       example: 1
+  responses:
+    NaoAutenticado:
+      description: Usuário não autenticado (sessão ausente ou expirada)
+
+paths:
+
+  /api/marca/add:
+    post:
+      tags:
+      - Marcas
+      summary: Cadastrar marca
+      description: Cadastra uma nova marca de veículo.
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarcaInput'
+            example:
+              nome_marcas: Toyota
+              origem: Japão
+      responses:
+        '201':
+          description: Marca criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca adicionada com sucesso
+        '400':
+          description: Dados da marca inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Dados da marca invalidos
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/marca/:
+    get:
+      tags:
+      - Marcas
+      summary: Listar marcas
+      description: Retorna todas as marcas cadastradas.
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de marcas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Marca'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/marca/{marcas_id}:
+    get:
+      tags:
+      - Marcas
+      summary: Buscar marca por ID
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MarcasId'
+      responses:
+        '200':
+          description: Marca encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Marca'
+        '404':
+          description: Marca não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca naõ encontrada
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/marca/upadate/{marcas_id}:
+    put:
+      tags:
+      - Marcas
+      summary: Atualizar marca
+      description: Atualiza parcialmente os campos enviados da marca.
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MarcasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarcaUpdate'
+            example:
+              nome_marcas: Toyota
+              origem: Japão
+      responses:
+        '200':
+          description: Marca atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca atualizada com sucesso
+        '404':
+          description: Marca não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca não encontrada
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/marca/delete/{marcas_id}:
+    delete:
+      tags:
+      - Marcas
+      summary: Excluir marca
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MarcasId'
+      responses:
+        '200':
+          description: Marca excluída
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca excluida com sucesso
+        '404':
+          description: Marca não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca não encontrada
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/inventario/add:
+    post:
+      tags:
+      - Inventário
+      summary: Cadastrar veículo
+      description: Cadastra um veículo e associa o veículo a uma marca existente.
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VeiculoInput'
+            example:
+              modelo: Corolla
+              transmissao: Automática
+              motor: 2.0
+              combustivel: Flex
+              marcas_id: 1
+              valor_diaria: 150.0
+      responses:
+        '201':
+          description: Veículo criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo adicionado com sucesso
+        '400':
+          description: Dados do veículo inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                dados_invalidos:
+                  value:
+                    mensagem: Dados do veiculo invalidos
+                diaria_invalida:
+                  value:
+                    mensagem: Valor da diaria invalido
+        '404':
+          description: Marca informada não existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Marca não encontrada
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/inventario/:
+    get:
+      tags:
+      - Inventário
+      summary: Listar veículos
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de veículos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Veiculo'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/inventario/{inventario_id}:
+    get:
+      tags:
+      - Inventário
+      summary: Buscar veículo por ID
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/InventarioId'
+      responses:
+        '200':
+          description: Veículo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Veiculo'
+        '404':
+          description: Veículo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+    put:
+      tags:
+      - Inventário
+      summary: Atualizar veículo
+      description: Atualiza os campos enviados do veículo.
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/InventarioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VeiculoUpdate'
+            example:
+              modelo: Corolla XEi
+              transmissao: Automática
+              motor: '2.0'
+              combustivel: Flex
+              valor_diaria: 160.0
+      responses:
+        '200':
+          description: Veículo atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo atualizado com sucesso
+        '400':
+          description: Valor da diária inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Valor da diaria invalido
+        '404':
+          description: Veículo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/inventario/delete/{inventario_id}:
+    delete:
+      tags:
+      - Inventário
+      summary: Excluir veículo
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/InventarioId'
+      responses:
+        '204':
+          description: Veículo excluído (resposta sem corpo)
+        '400':
+          description: Veículo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/cliente/add:
+    post:
+      tags:
+      - Clientes
+      summary: Cadastrar cliente
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteInput'
+            example:
+              nome_cliente: Ruan
+              sobrenome_cliente: Santos
+              endereco: Rua Exemplo, 100
+              cpf: '12345678900'
+      responses:
+        '200':
+          description: Cliente cadastrado, ou CPF já cadastrado (a API responde 200 nos dois casos)
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                cadastrado:
+                  value:
+                    mensagem: Cliente cadastrado com sucesso
+                cpf_duplicado:
+                  value:
+                    mensagme: Cliente já cadastrado
+        '400':
+          description: Dados do cliente inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                mensagme: Dados do cliente inválidos
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/cliente/:
+    get:
+      tags:
+      - Clientes
+      summary: Listar clientes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/cliente/{cliente_id}:
+    get:
+      tags:
+      - Clientes
+      summary: Buscar cliente por ID
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteDetalhe'
+        '400':
+          description: Cliente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/cliente/update/{clientes_id}:
+    put:
+      tags:
+      - Clientes
+      summary: Atualizar cliente
+      description: Atualiza os campos enviados do cliente.
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClientesId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteUpdate'
+            example:
+              nome_cliente: Ruan
+              sobrenome_cliente: Santos
+              endereco: Rua Nova, 200
+              cpf: '12345678900'
+      responses:
+        '200':
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente atualizado com sucesso
+        '404':
+          description: Cliente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/cliente/delete/{cliente_id}:
+    delete:
+      tags:
+      - Clientes
+      summary: Excluir cliente
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '204':
+          description: Cliente excluído (resposta sem corpo)
+        '404':
+          description: Cliente não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/pagamentos/add:
+    post:
+      tags:
+      - Pagamentos
+      summary: Cadastrar pagamento
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PagamentoInput'
+            example:
+              valor_pago: 500.0
+              data_pagamentos: '2026-10-08'
+              inventario_id: 1
+              clientes_id: 1
+      responses:
+        '200':
+          description: Pagamento cadastrado, ou cliente não encontrado (a API responde 200 nos dois casos)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                cadastrado:
+                  value:
+                    mensagem: Pagamento cadastrado com sucesso
+                cliente_nao_encontrado:
+                  value:
+                    mensagem: Cliente não Encontrado
+        '400':
+          description: Dados do pagamento inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Dados do pagamento inválidos
+        '404':
+          description: Veículo não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Modelo não Encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/pagamentos/:
+    get:
+      tags:
+      - Pagamentos
+      summary: Listar pagamentos
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de pagamentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pagamento'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/pagamentos/{pagamento_id}:
+    get:
+      tags:
+      - Pagamentos
+      summary: Buscar pagamento por ID
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PagamentoId'
+      responses:
+        '200':
+          description: Pagamento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pagamento'
+        '404':
+          description: Pagamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Pagamento não Encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+    put:
+      tags:
+      - Pagamentos
+      summary: Atualizar pagamento
+      description: Atualiza valor e/ou data do pagamento.
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PagamentoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                valor_pago:
+                  type: number
+                  format: double
+                  example: 600.0
+                data_pagamentos:
+                  type: string
+                  format: date
+                  example: '2026-10-08'
+      responses:
+        '200':
+          description: Pagamento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Pagamento atualizado com sucesso
+        '404':
+          description: Pagamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Pagamento de Cliente não Encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/pagamentos/delete/{pagamento_id}:
+    delete:
+      tags:
+      - Pagamentos
+      summary: Excluir pagamento
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PagamentoId'
+      responses:
+        '204':
+          description: Pagamento excluído (resposta sem corpo)
+        '400':
+          description: Pagamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Pagamento não encontrado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/locacoes/add:
+    post:
+      tags:
+      - Locações
+      summary: Criar locação
+      description: |
+        Cria uma locação. O status é definido automaticamente como ATIVA
+        e o valor é calculado pelo servidor.
+
+        Regras:
+        - O cliente deve existir.
+        - O veículo deve existir e ter valor de diária cadastrado.
+        - O veículo não pode possuir outra locação ATIVA ou ATRASADA.
+        - As datas devem estar no formato YYYY-MM-DD.
+        - A data prevista de devolução deve ser posterior à data de início.
+        - Valor = número de dias x valor da diária do veículo.
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocacaoInput'
+            example:
+              data_inicio: '2026-10-08'
+              data_prevista_devolucao: '2026-10-15'
+              inventario_id: 1
+              clientes_id: 1
+      responses:
+        '201':
+          description: Locação criada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                  id:
+                    type: integer
+                example:
+                  mensagem: Locação criada com sucesso
+                  id: 1
+        '400':
+          description: Regra de negócio ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                cliente:
+                  value:
+                    mensagem: Cliente não encontrado
+                veiculo:
+                  value:
+                    mensagem: Veiculo não Encontrado
+                data:
+                  value:
+                    mensagem: Formato de Data Invalido
+                periodo:
+                  value:
+                    mensagem: Data de Devolução deve ser posterior á data de inicioent
+                sem_diaria:
+                  value:
+                    mensagem: Veiculo sem valor de diaria cadastrado
+        '409':
+          description: Veículo já possui uma locação ATIVA ou ATRASADA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Veiculo ja esta Alugado
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/locacoes:
+    get:
+      tags:
+      - Locações
+      summary: Listar locações
+      description: Retorna todas as locações cadastradas.
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de locações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Locacao'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+
+  /api/locacao/{locacoes_id}:
+    get:
+      tags:
+      - Locações
+      summary: Buscar locação por ID
+      security:
+      - cookieAuth: []
+      parameters:
+      - $ref: '#/components/parameters/LocacaoId'
+      responses:
+        '200':
+          description: Locação encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Locacao'
+        '404':
+          description: Locação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Locação não encontrada
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+    patch:
+      tags:
+      - Locações
+      summary: Atualizar status da locação
+      description: |
+        Altera somente o status da locação.
+
+        Transições permitidas:
+        - ATIVA -> FINALIZADA
+        - ATIVA -> ATRASADA
+        - ATIVA -> CANCELADA
+        - ATRASADA -> FINALIZADA
+
+        Estados FINALIZADA e CANCELADA não possuem novas transições.
+      security:
+      - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusLocacaoInput'
+            example:
+              status_locacao: FINALIZADA
+      parameters:
+      - $ref: '#/components/parameters/LocacaoId'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Locação atualizada com sucesso
+        '400':
+          description: Locação não encontrada ou status inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                nao_encontrada:
+                  value:
+                    mensagem: Locação não Encontrada
+                status_invalido:
+                  value:
+                    mensagem: Status invalido
+        '409':
+          description: Transição de status não permitida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Transição de status não permitida
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'

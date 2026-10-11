@@ -1,8 +1,11 @@
 from app.extensions import db
+from decimal import Decimal, ROUND_HALF_UP
 from app.models import Clientes, Inventario, Locacoes
 from datetime import datetime
 
 STATUS_LOCACAO_VALIDOS = {'ATIVA', 'ATRASADA', 'FINALIZADA', 'CANCELADA'}
+
+STATUS_QUE_BLOQUEIAM_VEICULO = ['ATIVA','ATRASADA']
 
 TRANSICOES_PERMITIDAS = {
     'ATIVA': {'FINALIZADA', 'ATRASADA', 'CANCELADA'},
@@ -16,6 +19,10 @@ class RegraNegocioError(Exception):
         super().__init__(mensagem)
         self.mensagem = mensagem
         self.status_code = status_code
+        
+def calcular_valor(data_incio, data_prevista_devolucao, valor_diaria):
+    dias = (data_prevista_devolucao - data_incio).days
+    return (Decimal(dias) * Decimal(valor_diaria)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 def criar_locacao(data):
 
