@@ -33,25 +33,25 @@ def criar_locacao(data):
     inventario = Inventario.query.get(data.get('inventario_id'))
     if not inventario:
         raise RegraNegocioError("Veiculo não Encontrado")
-
-    locacao_ativa = Locacoes.query.filter_by(
-        inventario_id=data['inventario_id'], status_locacao='ATIVA'
-    ).first()
-    if locacao_ativa:
-        raise RegraNegocioError("Veiculo ja esta Alugado", status_code = 409)
-    try:
-        
+    
+    if inventario.valor_diaria is None or inventario.valor_diaria <= 0:
+        raise RegraNegocioError("Veiculo sem valor de diaria cadastrado")
+    
+    locacao_aberta = Locacoes.query.filter(
+        Locacoes.inventario_id == data['inventario_id'],
+        Locacoes.status_locacao.in_(STATUS_QUE_BLOQUEIAM_VEICULO)
+    ). first()
+    if locacao_aberta:
+        raise RegraNegocioError("Veiculo ja esta alugado", status_code= 409)
+    try: 
       data_inicio = datetime.strptime(data.get('data_inicio'), '%Y-%m-%d').date()
-      data_prevista_devolucao = datetime.strptime(data.get('data_prevista_devolucao'), '%Y-%m-%d').date()
-    except (ValueError, TypeError):
+      data_prevista_devolucao = datetime.strptime(data.get('data_prevista_devolucao'),'%Y-%m-%d').date()
+    except (ValueError,TypeError):
         raise RegraNegocioError ("Formato de Data Invalido")
     
     if data_prevista_devolucao <= data_inicio:
-        raise RegraNegocioError ("Data de Devolução deve ser posterior á data de inicioent ")
-
-    valor = data.get('valor')
-    if not isinstance(valor, (int, float)) or valor <= 0:
-        raise RegraNegocioError("Valor invalido")
+        raise RegraNegocioError ("Data de Devolução deve ser posterior a data de inicioent")
+    valor = calcular_valor(data_inicio,data_prevista_devolucao, inventario.valor_diaria)    
     
     locacao = Locacoes(
         data_inicio=data_inicio,

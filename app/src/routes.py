@@ -135,6 +135,9 @@ def mod_modelo(inventario_id):
     if not inventarios:
         return jsonify ({"mensagem":"Veiculo não encontrado"}), 404
     data = request.json
+    if 'valor_diaria' in data and not valor_diaria_valido(data['valor_diaria']):
+        return jsonify ({"mensagem":"Valor da diaria invalido"}), 400
+    
     if 'modelo' in data:
         inventarios.modelo = data['modelo']
         
@@ -148,7 +151,7 @@ def mod_modelo(inventario_id):
         inventarios.combustivel = data['combustivel']
     
     if 'valor_diaria' in data:
-        inventarios.valor_diari = data['valor_diaria']
+        inventarios.valor_diaria = data['valor_diaria']
 
     db.session.commit()
     return jsonify ({"mensagem":"Veiculo atualizado com sucesso"}), 200         
@@ -165,6 +168,7 @@ def get():
             'transmissao':inventarios.transmissao,
             'motor':inventarios.motor,
             'combustivel':inventarios.combustivel,
+            'valor_diaria':inventario.valor_diaria,
             'marcas_id':inventarios.marcas_id
         }
         inventario_list.append(inventario_date)
@@ -177,7 +181,7 @@ def add_cliente():
     if 'nome_cliente' in data and 'sobrenome_cliente' in data and 'endereco' in data and 'cpf' in data:
        cliente = Clientes.query.filter_by(cpf = data['cpf']).first()
        if  cliente:
-           return jsonify ({"mensagme":"Cliente já cadastrado"})
+           return jsonify ({"mensagme":"Cliente já cadastrado"}), 409
        clientes = Clientes(
            nome_cliente = data['nome_cliente'],
            sobrenome_cliente = data['sobrenome_cliente'],

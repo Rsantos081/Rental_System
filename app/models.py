@@ -12,7 +12,7 @@ class Inventario(db.Model):
     transmissao = db.Column(db.String(255), nullable=False)
     motor = db.Column(db.String(255), nullable=False)
     combustivel = db.Column(db.String(255), nullable=False)
-    valor_diaria = db.Column(db.Numeric(10,2), nuullable=False)
+    valor_diaria = db.Column(db.Numeric(10,2), nullable=False)
     marcas = db.relationship('Marcas', backref='Inventario', lazy = True)
     marcas_id = db.Column(db.Integer, db.ForeignKey('marcas.id'), nullable = False)
 
