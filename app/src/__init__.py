@@ -1,5 +1,4 @@
 from flask import Blueprint
-from app.src import routes
 
 marcas_bp = Blueprint('marca',__name__,url_prefix='/api/marca')
 inventario_bp = Blueprint('inventario',__name__,url_prefix='/api/inventario')

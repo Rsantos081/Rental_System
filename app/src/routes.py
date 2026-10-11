@@ -32,7 +32,7 @@ def delete_marca(marcas_id):
         db.session.delete(marcas)   
         db.session.commit()
         return jsonify ({"mensagem":"Marca excluida com sucesso"}), 200
-    return jsonify ({"mensagem":"Marca não encontrada"}), 400
+    return jsonify ({"mensagem":"Marca não encontrada"}), 404
  
 @marcas_bp.route('/<int:marcas_id>', methods = ["GET"])
 @login_required 
@@ -103,7 +103,7 @@ def delete_modelo(inventario_id):
     if inventarios:
         db.session.delete(inventarios)
         db.session.commit()
-        return jsonify ({"mensagem":"Veiculo excluido com sucesso"}), 200
+        return jsonify ({"mensagem":"Veiculo excluido com sucesso"}), 204
     return jsonify ({"mensagem":"Veiculo não encontrado"}), 400
 
 @inventario_bp.route('/<int:inventario_id>', methods = ["GET"])
@@ -186,7 +186,7 @@ def delete_cliente(cliente_id):
     if cliente:
         db.session.delete(cliente)
         db.session.commit()
-        return jsonify ({"mensagem":"Cliente excluído com sucesso"}), 200
+        return jsonify ({"mensagem":"Cliente excluído com sucesso"}), 204
     return jsonify ({"mensagem":"Cliente não encontrado"}), 404
 
 @cliente_bp.route('/<int:cliente_id>', methods = ['GET'])
@@ -268,7 +268,7 @@ def delete_payments(pagamento_id):
     if pagamento:
         db.session.delete(pagamento)
         db.session.commit()
-        return jsonify ({"mensagem":"Pagamento excluído com sucesso"}), 200
+        return jsonify ({"mensagem":"Pagamento excluído com sucesso"}), 204
     return jsonify ({"mensagem":"Pagamento não encontrado"}), 400
 
 @pagamentos_bp.route('/<int:pagamento_id>', methods = ['GET'])
