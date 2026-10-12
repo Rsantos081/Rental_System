@@ -40,7 +40,7 @@ def criar_locacao(data):
     locacao_aberta = Locacoes.query.filter(
         Locacoes.inventario_id == data['inventario_id'],
         Locacoes.status_locacao.in_(STATUS_QUE_BLOQUEIAM_VEICULO)
-    ). first()
+    ).first()
     if locacao_aberta:
         raise RegraNegocioError("Veiculo ja esta alugado", status_code= 409)
     try: 
@@ -50,7 +50,7 @@ def criar_locacao(data):
         raise RegraNegocioError ("Formato de Data Invalido")
     
     if data_prevista_devolucao <= data_inicio:
-        raise RegraNegocioError ("Data de Devolução deve ser posterior a data de inicioent")
+        raise RegraNegocioError ("Data de Devolução deve ser posterior a data de inicio")
     valor = calcular_valor(data_inicio,data_prevista_devolucao, inventario.valor_diaria)    
     
     locacao = Locacoes(

@@ -3,8 +3,12 @@ from flask_login import  logout_user,login_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.auth import auth_bp
-from app.extensions import db
+from app.extensions import db, login_manager
 from app.models import Administrador
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(Administrador, int(user_id))
 
 @auth_bp.route('/login', methods =['POST'])
 def login():
@@ -20,19 +24,23 @@ def login():
 @login_required
 def lougout():
     logout_user()
-    return jsonify ({"mensagem":"Logout realizado com sucesso"}), 204
+    return jsonify ({"mensagem":"Logout realizado com sucesso"}), 200
 
 @auth_bp.route('/registro', methods = ['POST'])
+@login_required
 def registro():
     data = request.get_json(silent=True) or {}
     nome = data.get("nome")
-    senha = data.get("senha")
+    sobrenome = data.get("sobrenome")
+    cpf = data.get('cpf')
+    senha = data.get('senha')
     
-    if not nome or not senha:
+    if not nome or not sobrenome or not cpf or not senha:
         return jsonify ({"mensagem":"Dados invalidos, observe os campos"}), 400
-    if Administrador.query.filter_by(nome=nome).first():
+    if Administrador.query.filter_by(nome == nome) | (Administrador.cpf == cpf).first():
         return jsonify ({"mensagem":"Administrador ja existe"}), 402
-    admin = Administrador(nome=nome , senha=generate_password_hash(senha))
+    
+    admin = Administrador(nome=nome , sobrenome=sobrenome , cpf = cpf, senha=generate_password_hash(senha))
     db.session.add(admin)
     db.session.commit()
     return jsonify ({"mensagem":"Administrador registrado com sucesso"}), 201

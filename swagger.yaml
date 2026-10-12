@@ -7,7 +7,9 @@ info:
     A API possui recursos para marcas, veículos do inventário, clientes,
     pagamentos e locações.
 
-    As rotas protegidas utilizam a sessão do Flask-Login (cookie `session`).
+    As rotas protegidas utilizam a sessão do Flask-Login (cookie `session`),
+    criada em `POST /auth/login`. O primeiro acesso exige um administrador
+    cadastrado em `POST /auth/registro`.
     Valores monetários (`Decimal`) e datas são serializados pelo Flask como texto:
     `"500.00"` e `"Thu, 08 Oct 2026 00:00:00 GMT"`.
   version: 1.0.0
@@ -19,6 +21,8 @@ servers:
   description: Servidor local
 
 tags:
+- name: Autenticação
+  description: Registro, login e logout de administradores
 - name: Marcas
   description: Gerenciamento das marcas dos veículos
 - name: Inventário
@@ -339,6 +343,41 @@ components:
         cpf:
           type: string
           example: '12345678900'
+    AdminLogin:
+      type: object
+      required:
+      - nome
+      - senha
+      properties:
+        nome:
+          type: string
+          example: admin
+        senha:
+          type: string
+          format: password
+          example: minhaSenha123
+    AdminRegistro:
+      type: object
+      required:
+      - nome
+      - sobrenome
+      - cpf
+      - senha
+      properties:
+        nome:
+          type: string
+          example: Maria
+        sobrenome:
+          type: string
+          example: Souza
+        cpf:
+          type: string
+          example: '12345678900'
+        senha:
+          type: string
+          format: password
+          example: minhaSenha123
+          description: Armazenada como hash (nunca em texto puro)
   parameters:
     MarcasId:
       name: marcas_id
@@ -393,6 +432,104 @@ components:
       description: Usuário não autenticado (sessão ausente ou expirada)
 
 paths:
+
+  /auth/registro:
+    post:
+      tags:
+      - Autenticação
+      summary: Registrar administrador
+      description: |
+        Cria um administrador. A senha é guardada como hash.
+
+        Regras:
+        - `nome`, `sobrenome`, `cpf` e `senha` são obrigatórios.
+        - Não pode existir administrador com o mesmo nome ou CPF.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRegistro'
+      responses:
+        '201':
+          description: Administrador registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Administrador registrado com sucesso
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Dados invalidos, observe os campos
+        '409':
+          description: Administrador já existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Administrador ja existe
+
+  /auth/login:
+    post:
+      tags:
+      - Autenticação
+      summary: Login do administrador
+      description: Valida nome e senha e cria a sessão (cookie `session`), usada nas rotas protegidas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLogin'
+      responses:
+        '200':
+          description: Administrador autenticado (o cookie de sessão vem em Set-Cookie)
+          headers:
+            Set-Cookie:
+              description: Cookie de sessão `session`
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Administrador logado com sucesso
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Credenciais invalidas
+
+  /auth/logout:
+    post:
+      tags:
+      - Autenticação
+      summary: Logout do administrador
+      description: Encerra a sessão atual.
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          description: Logout realizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Logout realizado com sucesso
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
 
   /api/marca/add:
     post:
@@ -736,27 +873,30 @@ paths:
               endereco: Rua Exemplo, 100
               cpf: '12345678900'
       responses:
-        '200':
-          description: Cliente cadastrado, ou CPF já cadastrado (a API responde 200 nos dois casos)
+        '201':
+          description: Cliente cadastrado
           content:
             application/json:
               schema:
-                type: object
-              examples:
-                cadastrado:
-                  value:
-                    mensagem: Cliente cadastrado com sucesso
-                cpf_duplicado:
-                  value:
-                    mensagme: Cliente já cadastrado
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente cadastrado com sucesso
         '400':
           description: Dados do cliente inválidos
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/Mensagem'
               example:
-                mensagme: Dados do cliente inválidos
+                mensagem: Dados do cliente inválidos
+        '409':
+          description: CPF já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Cliente já cadastrado
         '401':
           $ref: '#/components/responses/NaoAutenticado'
 
@@ -890,18 +1030,13 @@ paths:
               clientes_id: 1
       responses:
         '200':
-          description: Pagamento cadastrado, ou cliente não encontrado (a API responde 200 nos dois casos)
+          description: Pagamento cadastrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mensagem'
-              examples:
-                cadastrado:
-                  value:
-                    mensagem: Pagamento cadastrado com sucesso
-                cliente_nao_encontrado:
-                  value:
-                    mensagem: Cliente não Encontrado
+              example:
+                mensagem: Pagamento cadastrado com sucesso
         '400':
           description: Dados do pagamento inválidos
           content:
@@ -911,13 +1046,18 @@ paths:
               example:
                 mensagem: Dados do pagamento inválidos
         '404':
-          description: Veículo não encontrado
+          description: Cliente ou veículo não encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Modelo não Encontrado
+              examples:
+                veiculo:
+                  value:
+                    mensagem: Modelo não Encontrado
+                cliente:
+                  value:
+                    mensagem: Cliente não Encontrado
         '401':
           $ref: '#/components/responses/NaoAutenticado'
 
@@ -1095,7 +1235,7 @@ paths:
                     mensagem: Formato de Data Invalido
                 periodo:
                   value:
-                    mensagem: Data de Devolução deve ser posterior á data de inicioent
+                    mensagem: Data de Devolução deve ser posterior a data de inicio
                 sem_diaria:
                   value:
                     mensagem: Veiculo sem valor de diaria cadastrado
@@ -1106,7 +1246,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Mensagem'
               example:
-                mensagem: Veiculo ja esta Alugado
+                mensagem: Veiculo ja esta alugado
         '401':
           $ref: '#/components/responses/NaoAutenticado'
 

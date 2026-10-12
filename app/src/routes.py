@@ -168,7 +168,7 @@ def get():
             'transmissao':inventarios.transmissao,
             'motor':inventarios.motor,
             'combustivel':inventarios.combustivel,
-            'valor_diaria':inventario.valor_diaria,
+            'valor_diaria':inventarios.valor_diaria,
             'marcas_id':inventarios.marcas_id
         }
         inventario_list.append(inventario_date)
@@ -190,8 +190,8 @@ def add_cliente():
        )
        db.session.add(clientes)
        db.session.commit()
-       return jsonify ({"mensagem":"Cliente cadastrado com sucesso"}), 409
-    return jsonify ({"mensagme":"Dados do cliente inválidos"}),404
+       return jsonify ({"mensagem":"Cliente cadastrado com sucesso"}), 201
+    return jsonify ({"mensagme":"Dados do cliente inválidos"}),400
 
 @cliente_bp.route('/delete/<int:cliente_id>', methods = ['DELETE'])
 @login_required
