@@ -45,3 +45,10 @@ class Locacoes(db.Model):
     inventario_id = db.Column(db.Integer, db.ForeignKey('inventario.id'), nullable = False)
     clientes_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable = False)
     
+class Administrador(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    nome = db.Column(db.String(255), nullable = False)
+    sobrenome = db.Column(db.String(255), nullable = False)
+    cpf = db.Column(db.String(100), nullable = False, unique= True)
+    senha = db.Column(db.String(200), nullable = False)
+    

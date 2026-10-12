@@ -24,6 +24,7 @@ def create_app():
     from app.src import cliente_bp
     from app.src import pagamentos_bp
     from app.src import locacao_bp
+    from app.src import auth_bp
     from app.src import routes
     
     app.register_blueprint(marcas_bp)
@@ -31,6 +32,7 @@ def create_app():
     app.register_blueprint(cliente_bp)
     app.register_blueprint(pagamentos_bp)
     app.register_blueprint(locacao_bp)
+    app.register_blueprint(auth_bp)
     
     db.init_app(app)
     login_manager.init_app(app)
