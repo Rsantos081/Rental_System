@@ -16,9 +16,16 @@ def create_app():
         f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/"
         f"{os.getenv('DB_NAME')}"
     )
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # TRACK_MODIFICATIONS serve para desativar o envio de alertas e economia de memoria e desempenho da CPU
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # TRACK_MODIFICATIONS serve para desativar o envio de alertas e economia de memoria e desempenho da CPU, boas praticas da biblioteca
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+    
+    app.config['SWAGGER'] = {
+    'title': 'Rental System API',
+    'uiversion': 3,
+    'openapi': '3.0.3', # Versão Atualizado do Swagger para o Flasger
+ } 
     swagger = Swagger(app, template_file=os.path.join(base_dir, 'swagger.yaml'))
+
     
     from app.src import marcas_bp
     from app.src import inventario_bp
