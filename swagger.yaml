@@ -8,8 +8,8 @@ info:
     pagamentos e locações.
 
     As rotas protegidas utilizam a sessão do Flask-Login (cookie `session`),
-    criada em `POST /auth/login`. O primeiro acesso exige um administrador
-    cadastrado em `POST /auth/registro`.
+    criada em `POST /auth/login`. O `POST /auth/registro` também exige login,
+    então o primeiro administrador deve ser criado diretamente no banco.
     Valores monetários (`Decimal`) e datas são serializados pelo Flask como texto:
     `"500.00"` e `"Thu, 08 Oct 2026 00:00:00 GMT"`.
   version: 1.0.0
@@ -171,8 +171,7 @@ components:
       required:
       - valor_pago
       - data_pagamentos
-      - inventario_id
-      - clientes_id
+      - locacao_id
       properties:
         valor_pago:
           type: number
@@ -182,10 +181,7 @@ components:
           type: string
           format: date
           example: '2026-10-08'
-        inventario_id:
-          type: integer
-          example: 1
-        clientes_id:
+        locacao_id:
           type: integer
           example: 1
     Pagamento:
@@ -202,10 +198,7 @@ components:
           type: string
           example: Thu, 08 Oct 2026 00:00:00 GMT
           description: Data serializada pelo Flask no formato RFC 822
-        inventario_id:
-          type: integer
-          example: 1
-        clientes_id:
+        locacao_id:
           type: integer
           example: 1
     LocacaoInput:
@@ -261,6 +254,14 @@ components:
           type: string
           example: '500.00'
           description: Calculado pelo servidor (dias x diária do veículo); Decimal serializado como texto pelo Flask
+        valor_pago:
+          type: string
+          example: '300.00'
+          description: Soma dos pagamentos da locação; Decimal serializado como texto pelo Flask
+        saldo:
+          type: string
+          example: '750.00'
+          description: valor - valor_pago; Decimal serializado como texto pelo Flask
         inventario_id:
           type: integer
           example: 1
@@ -439,11 +440,13 @@ paths:
       - Autenticação
       summary: Registrar administrador
       description: |
-        Cria um administrador. A senha é guardada como hash.
+        Cria um administrador. Exige um administrador autenticado. A senha é guardada como hash.
 
         Regras:
         - `nome`, `sobrenome`, `cpf` e `senha` são obrigatórios.
         - Não pode existir administrador com o mesmo nome ou CPF.
+      security:
+      - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -475,6 +478,8 @@ paths:
                 $ref: '#/components/schemas/Mensagem'
               example:
                 mensagem: Administrador ja existe
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
 
   /auth/login:
     post:
@@ -1024,42 +1029,71 @@ paths:
             schema:
               $ref: '#/components/schemas/PagamentoInput'
             example:
-              valor_pago: 500.0
+              valor_pago: 300.0
               data_pagamentos: '2026-10-08'
-              inventario_id: 1
-              clientes_id: 1
+              locacao_id: 1
       responses:
-        '200':
+        '201':
           description: Pagamento cadastrado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Mensagem'
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                  id:
+                    type: integer
               example:
                 mensagem: Pagamento cadastrado com sucesso
+                id: 1
         '400':
-          description: Dados do pagamento inválidos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Mensagem'
-              example:
-                mensagem: Dados do pagamento inválidos
-        '404':
-          description: Cliente ou veículo não encontrado
+          description: Dados inválidos
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mensagem'
               examples:
-                veiculo:
+                dados_invalidos:
                   value:
-                    mensagem: Modelo não Encontrado
-                cliente:
+                    mensagem: Dados do pagamento invalidos
+                valor:
                   value:
-                    mensagem: Cliente não Encontrado
-        '401':
+                    mensagem: valor de pagamento invalido
+                data:
+                  value:
+                    mensagem: Formato de Data invalido
+        '404':
+          description: Locação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Locação não encontrada
+        '409':
+          description: Regra de negócio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                cancelada:
+                  value:
+                    mensagem: Locação cancelada não aceita pagamento
+                excede_saldo:
+                  value:
+                    mensagem: Pagamento excede o saldo da locação
+        '401': &id001
           $ref: '#/components/responses/NaoAutenticado'
+      description: |
+        Registra um pagamento de uma locação.
+
+        Regras:
+        - A locação deve existir e não pode estar CANCELADA.
+        - O valor deve ser maior que zero.
+        - A data deve estar no formato YYYY-MM-DD.
+        - A soma dos pagamentos não pode ultrapassar o valor da locação.
 
   /api/pagamentos/:
     get:
@@ -1110,7 +1144,8 @@ paths:
       tags:
       - Pagamentos
       summary: Atualizar pagamento
-      description: Atualiza valor e/ou data do pagamento.
+      description: Atualiza valor e/ou data do pagamento. Com o novo valor, a soma dos pagamentos da locação não pode ultrapassar
+        o valor da locação.
       security:
       - cookieAuth: []
       parameters:
@@ -1139,6 +1174,19 @@ paths:
                 $ref: '#/components/schemas/Mensagem'
               example:
                 mensagem: Pagamento atualizado com sucesso
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              examples:
+                valor:
+                  value:
+                    mensagem: valor de pagamento invalido
+                data:
+                  value:
+                    mensagem: Formato de Data invalido
         '404':
           description: Pagamento não encontrado
           content:
@@ -1146,9 +1194,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Mensagem'
               example:
-                mensagem: Pagamento de Cliente não Encontrado
-        '401':
-          $ref: '#/components/responses/NaoAutenticado'
+                mensagem: Pagamento não Encontrado
+        '409':
+          description: Pagamento excede o saldo da locação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensagem'
+              example:
+                mensagem: Pagamento excede o saldo da locação
+        '401': *id001
 
   /api/pagamentos/delete/{pagamento_id}:
     delete:

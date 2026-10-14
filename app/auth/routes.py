@@ -37,7 +37,7 @@ def registro():
     
     if not nome or not sobrenome or not cpf or not senha:
         return jsonify ({"mensagem":"Dados invalidos, observe os campos"}), 400
-    if Administrador.query.filter_by(nome == nome) | (Administrador.cpf == cpf).first():
+    if Administrador.query.filter_by((nome == nome) | (Administrador.cpf == cpf)).first():
         return jsonify ({"mensagem":"Administrador ja existe"}), 402
     
     admin = Administrador(nome=nome , sobrenome=sobrenome , cpf = cpf, senha=generate_password_hash(senha))
