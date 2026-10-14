@@ -29,12 +29,8 @@ class Pagamentos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     valor_pago = db.Column(db.Numeric(10,2), nullable=False)
     data_pagamentos = db.Column(db.Date,nullable=False)
-    inventario = db.relationship('Inventario', backref='Pagamentos', lazy = True)
-    clientes = db.relationship('Clientes', backref='Pagamentos', lazy = True)
     locacao = db.relationship('Locacoes', backref='Pagameentos', lazy = True)
     locacao_id = db.Column(db.Integer, db.ForeignKey('locacoes.id'), nullable = False)
-    inventario_id = db.Column(db.Integer, db.ForeignKey('inventario.id'))
-    clientes_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     
 class Locacoes(db.Model):
     id = db.Column(db.Integer, primary_key = True)

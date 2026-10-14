@@ -3,6 +3,8 @@ from flask_login import login_required
 
 from app.service.locacoes_service import criar_locacao
 from app.service.locacoes_service import RegraNegocioError, atualizar_status_locacao
+from app.service.pagamentos_service import criar_pagamento, atualizar_pagamento, resumo_pagamento
+
 from app.src import marcas_bp
 from app.src import inventario_bp
 from app.src import cliente_bp
@@ -256,25 +258,15 @@ def cliente():
 @pagamentos_bp.route('/add', methods = ['POST'])
 @login_required
 def add_pagamentos():
-    data = request.json
-    if 'valor_pago' in data and 'data_pagamentos' in data and 'inventario_id' in data and 'clientes_id' in data:
-        inventario = Inventario.query.get(data['inventario_id'])
-        if not inventario:
-            return jsonify ({"mensagem":"Modelo não Encontrado"}), 404
-        cliente = Clientes.query.get(data['clientes_id'])
-        if not cliente:
-            return jsonify ({"mensagem":"Cliente não Encontrado"}), 404
-        pagamento = Pagamentos(
-            valor_pago=data['valor_pago'],
-            data_pagamentos=data['data_pagamentos'],
-            inventario_id=data['inventario_id'],
-            clientes_id=data['clientes_id']
-        )
-        db.session.add(pagamento)
-        db.session.commit()
-        return jsonify ({"mensagem":"Pagamento cadastrado com sucesso"}), 200
-    return jsonify ({"mensagem":"Dados do pagamento inválidos"}), 400
-
+    data = request.get_json(silent=True) or {}
+    if 'valor_pago' in data and 'data_pagamentos' in data and 'locacao_id' in data:
+        try:
+            pagamento = criar_pagamento(data)
+        except RegraNegocioError as erro:
+            return jsonify ({"mensagem":erro.mensagem}), erro.status_code
+        return jsonify ({"mensagem":"Pagamento cadastrado com sucesso", 'id':pagamento.id}), 201
+    return jsonify ({"mensagem":"Dados do pagamento invalidos"}), 400
+                    
 @pagamentos_bp.route('/delete/<int:pagamento_id>', methods = ['DELETE'])
 @login_required
 def delete_payments(pagamento_id):
@@ -294,24 +286,17 @@ def id_pagamento(pagamento_id):
             'id': pagamento.id,
             'valor_pago':pagamento.valor_pago,
             'data_pagamentos':pagamento.data_pagamentos,
-            'inventario_id':pagamento.inventario_id,
-            'clientes_id':pagamento.clientes_id            
+            'locacao_id':pagamento.locacao_id         
         })
     return jsonify ({"mensagem":"Pagamento não Encontrado"}), 404
 @pagamentos_bp.route('/<int:pagamento_id>', methods = ['PUT'])
 @login_required
 def update_pagamento(pagamento_id):
-    pagamento = Pagamentos.query.get(pagamento_id)
-    if not pagamento:
-        return jsonify ({"mensagem":"Pagamento de Cliente não Encontrado"}), 404
-    data =  request.json
-    
-    if 'valor_pago' in data:
-        pagamento.valor_pago = data['valor_pago']
-    if 'data_pagamentos' in data:
-        pagamento.data_pagamentos = data['data_pagamentos']
-
-    db.session.commit()
+    data = request.get_json(silent=True) or {}
+    try:
+        atualizar_pagamento(pagamento_id, data)
+    except RegraNegocioError as erro:
+        return jsonify ({"mensagem":erro.mensagem}), erro.status_code
     return jsonify ({"mensagem":"Pagamento atualizado com sucesso"}), 200     
 
 @pagamentos_bp.route('/', methods = ['GET'])
@@ -324,8 +309,7 @@ def get():
             'id':pagamentos.id,
             'valor_pago':pagamentos.valor_pago,
             'data_pagamentos':pagamentos.data_pagamentos,
-            'inventario_id':pagamentos.inventario_id,
-            'clientes_id':pagamentos.clientes_id
+            'locacao_id':pagamentos.locacao_id
         }
         pagamento_list.append(pagamento_date)
     return jsonify (pagamento_list)
@@ -345,34 +329,40 @@ def get_locacoes():
     locacao = Locacoes.query.all()
     locacao_list = []
     for locacoes in locacao:
+        pago, saldo = resumo_pagamento(locacoes)
         locacao_date = {
             'id':locacoes.id,
             'data_inicio':locacoes.data_inicio,
             'data_prevista_devolucao':locacoes.data_prevista_devolucao,        
             'status_locacao':locacoes.status_locacao,
             'valor':locacoes.valor,
+            'valor_pago':pago,
+            'saldo':saldo,
             'inventario_id':locacoes.inventario_id,
             'clientes_id':locacoes.clientes_id  
         }
         locacao_list.append(locacao_date)
     return jsonify (locacao_list)
-
+ 
 @locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['GET'])
 @login_required
 def locacao_id(locacoes_id):
     locacao = Locacoes.query.get(locacoes_id)
     if locacao:
+        pago, saldo = resumo_pagamento(locacao)
         return jsonify ({
             'id': locacao.id,
             'data_inicio':locacao.data_inicio,
             'data_prevista_devolucao':locacao.data_prevista_devolucao,
             'status_locacao':locacao.status_locacao,
             'valor':locacao.valor,
+            'valor_pago':pago,
+            'saldo':saldo,
             'inventario_id':locacao.inventario_id,
             'clientes_id':locacao.clientes_id        
         })
     return jsonify ({"mensagem":"Locação não encontrada"}), 404
-
+ 
 @locacao_bp.route('/locacao/<int:locacoes_id>', methods = ['PATCH'])
 @login_required
 def patch_locacao(locacoes_id):
