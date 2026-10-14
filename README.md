@@ -9,7 +9,7 @@ API REST para gerenciamento de uma locadora de veículos, desenvolvida em **Pyth
 - Bloqueio de locação para veículo que já está alugado (`ATIVA` ou `ATRASADA`)
 - **Pagamentos vinculados à locação**, com controle de saldo (a soma não pode ultrapassar o valor)
 - Autenticação de administradores com **Flask-Login** (sessão por cookie) e senhas com **hash**
-- Documentação **Swagger** (OpenAPI 3) disponível em `/apidocs/`
+- Documentação **Swagger** (OpenAPI 3.0.3) disponível em `/apidocs/`
 
 ## Tecnologias
 
