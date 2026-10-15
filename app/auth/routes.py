@@ -15,7 +15,7 @@ def login():
     data = request.get_json(silent=True) or {}
     user = Administrador.query.filter_by(nome=data.get("nome")).first()
     
-    if user and check_password_hash(user.senha, data.get("senha") or ""):
+    if user and check_password_hash(user.senha, data.get("senha") or ""): # O check_password_hash ele tem objetivo de verificar se a senha inserida esta correta ou incorreta, caso de correta ele tera acesso a sua conta
         login_user(user)
         return jsonify ({"mensagme":"Administrador logado com sucesso"}), 200
     return jsonify ({"mensagem":"Credenciais invalidas"}), 401
@@ -40,7 +40,7 @@ def registro():
     if Administrador.query.filter_by((nome == nome) | (Administrador.cpf == cpf)).first():
         return jsonify ({"mensagem":"Administrador ja existe"}), 402
     
-    admin = Administrador(nome=nome , sobrenome=sobrenome , cpf = cpf, senha=generate_password_hash(senha))
+    admin = Administrador(nome=nome , sobrenome=sobrenome , cpf = cpf, senha=generate_password_hash(senha)) # Campo responsavel por não cadastrar uma senha padrao no banco como (minha_senha123), ele cadastrar uma pedaço de texto de string aleatorias.
     db.session.add(admin)
     db.session.commit()
     return jsonify ({"mensagem":"Administrador registrado com sucesso"}), 201

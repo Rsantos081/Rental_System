@@ -12,7 +12,6 @@ from app.src import pagamentos_bp
 from app.src import locacao_bp
 
 from app.extensions import db
-
 from app.models import Marcas,Inventario,Clientes,Pagamentos, Locacoes
 
 def valor_diaria_valido(valor):
@@ -258,7 +257,7 @@ def cliente():
 @pagamentos_bp.route('/add', methods = ['POST'])
 @login_required
 def add_pagamentos():
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) or {} # Corpo que faz nossa requisição não quebrar na primeira tentativa, caso o corpo da requisição não for um JSON valido ele ira retornar None, como uma proteção de duas Etapas.
     if 'valor_pago' in data and 'data_pagamentos' in data and 'locacao_id' in data:
         try:
             pagamento = criar_pagamento(data)
